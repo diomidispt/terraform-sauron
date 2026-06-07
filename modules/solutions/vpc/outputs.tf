@@ -14,6 +14,7 @@ output "private_subnet_ids" {
   value = { for k, v in module.subnets_private.subnets : k => v.id }
 }
 
-output "nat_gateway_ids" {
-  value = { for k, v in module.nat_gateways.nat_gateways : k => v.id }
-}
+# Uncomment when nat_gateways module is enabled
+# output "nat_gateway_ids" {
+#   value = { for k, v in module.nat_gateways.nat_gateways : k => v.id }
+# }
