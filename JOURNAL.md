@@ -94,6 +94,24 @@ No long-lived keys. GitHub gives each workflow run a short-lived JWT, AWS valida
 
 ### CI/CD fixes and improvements
 
+## 08/06/2026
+
+### VPC — DEV environment
+
+Deployed `envs/vpc/DioProjects-us-east-1-sauron-vpc-DEV` via CI/CD:
+
+- **VPC** `sauron-DEV-VPC` — `10.0.0.0/20`
+- **3 public subnets** (A/B/C) — `/24` each, for load balancers
+- **3 private subnets** (A/B/C) — `/22` each, for EC2/ECS/RDS
+- **Internet Gateway** — public internet access
+- **6 route tables** — public routes → IGW, private routes → (NAT disabled)
+- **NAT Gateway commented out** — re-enable in `modules/solutions/vpc/main.tf` when private subnets need internet (~$32/month)
+- Updated `github-actions-ci` OIDC role to also trust `terraform-aws` repo
+
+---
+
+### CI/CD fixes and improvements
+
 - Removed hardcoded `profile = "sauron-admin"` from all `state.tf` files — was breaking CI/CD since OIDC credentials don't use named profiles
 - Fixed `sauron-data-dev` bucket name collision (S3 names are globally unique) — renamed to `sauron-data-dev-298104300097`
 - Refactored deploy workflow: plan + apply split into two jobs, approval gate (`environment: apply`) required before apply runs
