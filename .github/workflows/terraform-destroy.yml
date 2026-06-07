@@ -15,6 +15,7 @@ permissions:
 jobs:
   destroy:
     runs-on: ubuntu-latest
+    environment: apply
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
