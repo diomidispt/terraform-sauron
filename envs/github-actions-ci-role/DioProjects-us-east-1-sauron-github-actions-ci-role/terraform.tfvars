@@ -1,5 +1,5 @@
 allowed_repos = [
-  "diomidispt/terraform-sauron:*"
+  "diomidispt/terraform-aws:*"
 ]
 
 name = "github-actions-ci"
