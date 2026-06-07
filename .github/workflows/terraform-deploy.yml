@@ -9,13 +9,15 @@ on:
       - main
 
 permissions:
-  id-token: write   # This is required for requesting the JWT
-  contents: write    # This is required for actions/checkout
+  id-token: write
+  contents: read
 
 jobs:
-  terraform:
-    name: Deploy Terraform Environments
+  plan:
+    name: Terraform Plan
     runs-on: ubuntu-latest
+    outputs:
+      envs: ${{ steps.find-envs.outputs.envs }}
 
     steps:
       - name: Checkout repository
@@ -32,36 +34,71 @@ jobs:
         id: find-envs
         run: |
           if [[ $GITHUB_EVENT_NAME == "pull_request" ]]; then
-            echo "Running on a pull request. Comparing with origin/main."
             changed_files=$(git diff origin/main...HEAD --name-only)
-          elif [[ $GITHUB_EVENT_NAME == "push" && $GITHUB_REF == "refs/heads/main" ]]; then
-            echo "Running on a push to main. Comparing the last two commits."
+          else
             changed_files=$(git diff HEAD~1 HEAD --name-only)
           fi
 
-          echo "Step 1: Get all file paths changed"
-          echo "$changed_files"
-
-          echo "Step 2: Filter paths to include only 'envs'"
           envs_files=$(echo "$changed_files" | grep '^envs/' || true)
-          echo "$envs_files"
 
-          echo "Step 3: Remove file names to keep folder paths"
-          folders=$(echo "$envs_files" | sed 's|/[^/]*$|/|' || true)
-          echo "$folders"
+          if [[ -z "$envs_files" ]]; then
+            echo "No changed environments found. Skipping."
+            echo "envs=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
 
-          echo "Step 4: Merge duplicate folders"
-          unique_folders=$(echo "$folders" | sort | uniq || true)
-          echo "$unique_folders"
+          filtered=$(echo "$envs_files" \
+            | sed 's|/[^/]*$|/|' \
+            | sort | uniq \
+            | grep -v '/common/' || true)
 
-          echo "Step 5: Remove paths containing 'common'"
-          filtered_folders=$(echo "$unique_folders" | grep -v '/common/' || true)
-          echo "$filtered_folders"
-
-          echo "Changed or newly created folders:"
-          echo "$filtered_folders"
-          envs_list=$(echo "$filtered_folders" | tr '\n' ' ' | xargs || true)
+          envs_list=$(echo "$filtered" | tr '\n' ' ' | xargs)
+          echo "Changed environments: $envs_list"
           echo "envs=$envs_list" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS Credentials
+        if: steps.find-envs.outputs.envs != ''
+        uses: aws-actions/configure-aws-credentials@v4.2.1
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-session-name: github-actions-ci
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Terraform Plan
+        if: steps.find-envs.outputs.envs != ''
+        run: |
+          for env in ${{ steps.find-envs.outputs.envs }}; do
+            if [ ! -d "$env" ]; then
+              echo "Directory $env does not exist. Skipping."
+              continue
+            fi
+            echo "Planning: $env"
+            cd "$env"
+            terraform init -input=false
+            terraform validate
+            terraform plan -input=false \
+              -var-file="common.account.auto.tfvars" \
+              -var-file="common.region.auto.tfvars"
+            cd - > /dev/null
+          done
+
+  apply:
+    name: Terraform Apply
+    needs: plan
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.plan.outputs.envs != ''
+    runs-on: ubuntu-latest
+    environment: apply
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3.1.2
+        with:
+          terraform_version: 1.12.0
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4.2.1
@@ -70,40 +107,18 @@ jobs:
           role-session-name: github-actions-ci
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Generate Terraform Plan
-        id: generate-plan
+      - name: Terraform Apply
         run: |
-            for env in $(echo "${{ steps.find-envs.outputs.envs }}"); do
-              if [ ! -d "$env" ]; then
-                echo "Directory $env does not exist. Skipping."
-                continue
-              fi
-              echo "Generating plan for environment: $env"
-              cd "$env"
-
-              terraform init -input=false
-              terraform validate
-              terraform plan -out=tfplan -input=false \
-                -var-file="common.account.auto.tfvars" \
-                -var-file="common.region.auto.tfvars"
-
-              cd - > /dev/null
-            done
-
-      - name: Apply Terraform Plan
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-            for env in $(echo "${{ steps.find-envs.outputs.envs }}"); do
-              if [ ! -d "$env" ]; then
-                echo "Directory $env does not exist. Skipping."
-                continue
-              fi
-              echo "Applying plan for environment: $env"
-              cd "$env"
-
-              terraform apply -auto-approve \
-                -var-file="common.account.auto.tfvars" \
-                -var-file="common.region.auto.tfvars"
-
-              cd - > /dev/null
-            done
+          for env in ${{ needs.plan.outputs.envs }}; do
+            if [ ! -d "$env" ]; then
+              echo "Directory $env does not exist. Skipping."
+              continue
+            fi
+            echo "Applying: $env"
+            cd "$env"
+            terraform init -input=false
+            terraform apply -auto-approve -input=false \
+              -var-file="common.account.auto.tfvars" \
+              -var-file="common.region.auto.tfvars"
+            cd - > /dev/null
+          done
