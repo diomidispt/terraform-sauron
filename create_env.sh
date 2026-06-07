@@ -70,7 +70,7 @@ terraform {
 		bucket         = "sauron-cicd-tfstate"
 		key            = "$ENVIRONMENT/${ACCOUNT_NAME}-${REGION_NAME}-${ENVIRONMENT}-${UNIQUE_ID}-${STAGE}/terraform.tfstate"
 		dynamodb_table = "sauron-cicd-tfstate"
-		profile        = "sauron"
+		profile        = "sauron-admin"
 		encrypt        = "true"
 	}
 }
@@ -83,7 +83,7 @@ terraform {
 		bucket         = "sauron-cicd-tfstate"
 		key            = "$ENVIRONMENT/${ACCOUNT_NAME}-${REGION_NAME}-${ENVIRONMENT}-${STAGE}/terraform.tfstate"
 		dynamodb_table = "sauron-cicd-tfstate"
-		profile        = "sauron"
+		profile        = "sauron-admin"
 		encrypt        = "true"
 	}
 }

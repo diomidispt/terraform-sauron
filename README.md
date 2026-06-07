@@ -8,7 +8,7 @@ Personal infrastructure portfolio — modular, DRY Terraform for AWS.
 .
 ├── common/
 │   └── accounts/
-│       └── Sauron/
+│       └── DioProjects/
 │           ├── account.tfvars
 │           └── region.us-east-1.tfvars
 ├── envs/
@@ -60,7 +60,7 @@ Personal infrastructure portfolio — modular, DRY Terraform for AWS.
 ## Workflow
 
 ### Bootstrap (first time)
-1. Fill in your AWS account ID in [common/accounts/Sauron/account.tfvars](common/accounts/Sauron/account.tfvars)
+1. Fill in your AWS account ID in [common/accounts/DioProjects/account.tfvars](common/accounts/DioProjects/account.tfvars)
 2. Deploy `tf-state-backend-s3` locally (no remote state yet):
    ```bash
    cd envs/tf-state-backend-s3/<env-folder>

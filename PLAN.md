@@ -5,10 +5,11 @@ Build a complete AWS infrastructure portfolio using Terraform — starting from 
 
 ---
 
+
 ## Immediate next steps
 
-- [ ] Update `common/accounts/Sauron/account.tfvars` with the real AWS account ID
-- [ ] Update `common/accounts/Sauron/region.us-east-1.tfvars` with the correct region if needed
+- [ ] Update `common/accounts/DioProjects/account.tfvars` with the real AWS account ID
+- [ ] Update `common/accounts/DioProjects/region.us-east-1.tfvars` with the correct region if needed
 - [ ] Review and validate the 3 GitHub Actions workflows — check IAM role permissions, secrets names, and Terraform version
 - [ ] Write the `modules/solutions/tf-state-backend-s3` module — creates an S3 bucket + DynamoDB table for remote state
 - [ ] Write the `modules/resources/s3-bucket` module — reusable atomic S3 bucket resource
