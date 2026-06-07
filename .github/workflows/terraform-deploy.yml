@@ -43,25 +43,25 @@ jobs:
           echo "$changed_files"
 
           echo "Step 2: Filter paths to include only 'envs'"
-          envs_files=$(echo "$changed_files" | grep '^envs/')
+          envs_files=$(echo "$changed_files" | grep '^envs/' || true)
           echo "$envs_files"
 
           echo "Step 3: Remove file names to keep folder paths"
-          folders=$(echo "$envs_files" | sed 's|/[^/]*$|/|')
+          folders=$(echo "$envs_files" | sed 's|/[^/]*$|/|' || true)
           echo "$folders"
 
           echo "Step 4: Merge duplicate folders"
-          unique_folders=$(echo "$folders" | sort | uniq)
+          unique_folders=$(echo "$folders" | sort | uniq || true)
           echo "$unique_folders"
 
           echo "Step 5: Remove paths containing 'common'"
-          filtered_folders=$(echo "$unique_folders" | grep -v '/common/')
+          filtered_folders=$(echo "$unique_folders" | grep -v '/common/' || true)
           echo "$filtered_folders"
 
           echo "Changed or newly created folders:"
           echo "$filtered_folders"
-          envs_list=$(echo "$filtered_folders" | tr '\n' ' ' | xargs)
-          echo "::set-output name=envs::$envs_list"
+          envs_list=$(echo "$filtered_folders" | tr '\n' ' ' | xargs || true)
+          echo "envs=$envs_list" >> $GITHUB_OUTPUT
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4.2.1
