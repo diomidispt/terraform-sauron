@@ -87,3 +87,15 @@ No long-lived keys. GitHub gives each workflow run a short-lived JWT, AWS valida
 | Push to `main` | plan + apply on changed env folders |
 | Pull request | plan only |
 | Manual trigger | destroy on specified env path |
+
+---
+
+## 07/06/2026 (continued)
+
+### CI/CD fixes and improvements
+
+- Removed hardcoded `profile = "sauron-admin"` from all `state.tf` files — was breaking CI/CD since OIDC credentials don't use named profiles
+- Fixed `sauron-data-dev` bucket name collision (S3 names are globally unique) — renamed to `sauron-data-dev-298104300097`
+- Refactored deploy workflow: plan + apply split into two jobs, approval gate (`environment: apply`) required before apply runs
+- PRs trigger plan only; merges to main trigger plan → approval → apply
+- Destroy workflow also requires approval before running

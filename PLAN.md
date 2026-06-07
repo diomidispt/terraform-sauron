@@ -8,14 +8,16 @@ Build a complete AWS infrastructure portfolio using Terraform — starting from 
 
 ## Immediate next steps
 
-- [ ] Update `common/accounts/DioProjects/account.tfvars` with the real AWS account ID
-- [ ] Update `common/accounts/DioProjects/region.us-east-1.tfvars` with the correct region if needed
-- [ ] Review and validate the 3 GitHub Actions workflows — check IAM role permissions, secrets names, and Terraform version
-- [ ] Write the `modules/solutions/tf-state-backend-s3` module — creates an S3 bucket + DynamoDB table for remote state
-- [ ] Write the `modules/resources/s3-bucket` module — reusable atomic S3 bucket resource
-- [ ] Run `create_env.sh` to scaffold the first environment under `envs/tf-state-backend-s3/`
-- [ ] Deploy the S3 state backend locally (no remote state yet), then migrate state into it with `terraform init -migrate-state`
-- [ ] All future environments use the S3 backend automatically after this
+- [x] S3 + DynamoDB remote state backend deployed
+- [x] GitHub Actions OIDC role deployed — keyless CI/CD auth
+- [x] CI/CD workflows: plan on PR, plan + approval + apply on merge to main, manual destroy with approval
+- [ ] Build VPC module — networking foundation (subnets, route tables, NAT gateway, internet gateway)
+- [ ] Deploy VPC environment
+- [ ] Decide on compute: ECS Fargate (simpler, recommended) vs EKS (more complex) vs EC2 (raw)
+- [ ] Set up ECR — container registry for the go-app Docker image
+- [ ] Deploy ECS Fargate cluster + service to run the go-app
+- [ ] Deploy RDS PostgreSQL for the go-app database
+- [ ] Wire go-app CI/CD: build Docker image → push to ECR → trigger ECS deploy
 
 ---
 
