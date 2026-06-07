@@ -60,22 +60,20 @@ module "route_tables" {
             "${local.environment_name}-Subnet-Private-${upper(v["name_suffix"])}"
           ].id
         ]
-        routes = [
-          {
-            "destination_cidr_block" = "0.0.0.0/0"
-            "nat_gateway_id"         = module.nat_gateways.nat_gateways["${local.environment_name}-NAT-${upper(local.azs[0]["name_suffix"])}"].id
-          }
-        ]
+        # Uncomment the routes block below and the nat_gateways module to enable internet access from private subnets (~$32/month)
+        routes = []
       }
     }
   )
 }
 
-module "nat_gateways" {
-  source = "../../resources/nat-gateways"
-  nat_gateways = {
-    "${local.environment_name}-NAT-${upper(local.azs[0]["name_suffix"])}" = {
-      subnet_id = module.subnets_public.subnets["${local.environment_name}-Subnet-Public-${upper(local.azs[0]["name_suffix"])}"].id
-    }
-  }
-}
+# Uncomment to enable NAT gateway — required for private subnets to reach the internet (~$32/month)
+# Also uncomment the routes block in the private route tables above
+# module "nat_gateways" {
+#   source = "../../resources/nat-gateways"
+#   nat_gateways = {
+#     "${local.environment_name}-NAT-${upper(local.azs[0]["name_suffix"])}" = {
+#       subnet_id = module.subnets_public.subnets["${local.environment_name}-Subnet-Public-${upper(local.azs[0]["name_suffix"])}"].id
+#     }
+#   }
+# }

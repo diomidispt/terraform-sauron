@@ -17,6 +17,7 @@ provider "aws" {
       "tf:managed-by" : "terraform",
       "owner" : "DevOps",
       "purpose" : "networking",
+      "environment" : "${var.env_name}-${var.env_type}",
     }
   }
 }
