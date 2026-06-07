@@ -1,4 +1,4 @@
-bucket_name         = "sauron-data-dev"
+bucket_name         = "sauron-data-dev-298104300097"
 enable_versioning   = false
 block_public_access = true
 bucket_policy = {

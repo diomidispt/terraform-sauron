@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 permissions:
   id-token: write
@@ -17,47 +14,36 @@ jobs:
     name: Terraform Plan
     runs-on: ubuntu-latest
     outputs:
-      envs: ${{ steps.find-envs.outputs.envs }}
+      envs: ${{ steps.changed.outputs.envs }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 2
+
+      - name: Detect changed environments
+        id: changed
+        run: |
+          # Get files changed in this push, keep only envs/ paths, strip filename to get the folder
+          changed=$(git diff HEAD~1 HEAD --name-only \
+            | grep '^envs/' \
+            | grep -v '/common/' \
+            | sed 's|/[^/]*$||' \
+            | sort -u \
+            | tr '\n' ' ' \
+            | xargs)
+          echo "Detected: $changed"
+          echo "envs=$changed" >> $GITHUB_OUTPUT
 
       - name: Set up Terraform
+        if: steps.changed.outputs.envs != ''
         uses: hashicorp/setup-terraform@v3.1.2
         with:
           terraform_version: 1.12.0
 
-      - name: Find Changed Environments
-        id: find-envs
-        run: |
-          if [[ $GITHUB_EVENT_NAME == "pull_request" ]]; then
-            changed_files=$(git diff origin/main...HEAD --name-only)
-          else
-            changed_files=$(git diff HEAD~1 HEAD --name-only)
-          fi
-
-          envs_files=$(echo "$changed_files" | grep '^envs/' || true)
-
-          if [[ -z "$envs_files" ]]; then
-            echo "No changed environments found. Skipping."
-            echo "envs=" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          filtered=$(echo "$envs_files" \
-            | sed 's|/[^/]*$|/|' \
-            | sort | uniq \
-            | grep -v '/common/' || true)
-
-          envs_list=$(echo "$filtered" | tr '\n' ' ' | xargs)
-          echo "Changed environments: $envs_list"
-          echo "envs=$envs_list" >> $GITHUB_OUTPUT
-
       - name: Configure AWS Credentials
-        if: steps.find-envs.outputs.envs != ''
+        if: steps.changed.outputs.envs != ''
         uses: aws-actions/configure-aws-credentials@v4.2.1
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
@@ -65,14 +51,10 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Terraform Plan
-        if: steps.find-envs.outputs.envs != ''
+        if: steps.changed.outputs.envs != ''
         run: |
-          for env in ${{ steps.find-envs.outputs.envs }}; do
-            if [ ! -d "$env" ]; then
-              echo "Directory $env does not exist. Skipping."
-              continue
-            fi
-            echo "Planning: $env"
+          for env in ${{ steps.changed.outputs.envs }}; do
+            echo "=== Planning: $env ==="
             cd "$env"
             terraform init -input=false
             terraform validate
@@ -85,15 +67,15 @@ jobs:
   apply:
     name: Terraform Apply
     needs: plan
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.plan.outputs.envs != ''
+    if: needs.plan.outputs.envs != ''
     runs-on: ubuntu-latest
-    environment: apply
+    environment: apply   # ← pauses here, waits for your manual approval
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 2
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3.1.2
@@ -110,11 +92,7 @@ jobs:
       - name: Terraform Apply
         run: |
           for env in ${{ needs.plan.outputs.envs }}; do
-            if [ ! -d "$env" ]; then
-              echo "Directory $env does not exist. Skipping."
-              continue
-            fi
-            echo "Applying: $env"
+            echo "=== Applying: $env ==="
             cd "$env"
             terraform init -input=false
             terraform apply -auto-approve -input=false \
