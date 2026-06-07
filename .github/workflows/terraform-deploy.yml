@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 permissions:
   id-token: write
@@ -25,16 +28,20 @@ jobs:
       - name: Detect changed environments
         id: changed
         run: |
-          # Get files changed in this push, keep only envs/ paths, strip filename to get the folder
-          changed=$(git diff HEAD~1 HEAD --name-only \
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            changed=$(git diff origin/main...HEAD --name-only)
+          else
+            changed=$(git diff HEAD~1 HEAD --name-only)
+          fi
+          envs=$(echo "$changed" \
             | grep '^envs/' \
             | grep -v '/common/' \
             | sed 's|/[^/]*$||' \
             | sort -u \
             | tr '\n' ' ' \
             | xargs)
-          echo "Detected: $changed"
-          echo "envs=$changed" >> $GITHUB_OUTPUT
+          echo "Detected: $envs"
+          echo "envs=$envs" >> $GITHUB_OUTPUT
 
       - name: Set up Terraform
         if: steps.changed.outputs.envs != ''
@@ -67,7 +74,7 @@ jobs:
   apply:
     name: Terraform Apply
     needs: plan
-    if: needs.plan.outputs.envs != ''
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.plan.outputs.envs != ''
     runs-on: ubuntu-latest
     environment: apply   # ← pauses here, waits for your manual approval
 
