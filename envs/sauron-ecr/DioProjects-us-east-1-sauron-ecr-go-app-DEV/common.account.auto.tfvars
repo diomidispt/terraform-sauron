@@ -1,1 +1,1 @@
-../../../common/accounts/panagiotious-voreas/account.tfvars
+../../../common/accounts/DioProjects/account.tfvars

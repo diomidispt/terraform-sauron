@@ -1,1 +1,1 @@
-../../../common/accounts/panagiotious-voreas/region.us-east-1.tfvars
+../../../common/accounts/DioProjects/region.us-east-1.tfvars
