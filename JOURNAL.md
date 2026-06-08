@@ -117,3 +117,24 @@ Deployed `envs/vpc/DioProjects-us-east-1-sauron-vpc-DEV` via CI/CD:
 - Refactored deploy workflow: plan + apply split into two jobs, approval gate (`environment: apply`) required before apply runs
 - PRs trigger plan only; merges to main trigger plan → approval → apply
 - Destroy workflow also requires approval before running
+
+---
+
+## 09/06/2026
+
+### ECR — go-app-dev
+
+Created `envs/sauron-ecr/DioProjects-us-east-1-sauron-ecr-go-app-DEV/` using the existing ECR module:
+
+- Repository name: `go-app-dev`
+- Lifecycle policy: keep last 5 images (controls storage cost)
+- IAM repo admin: `arn:aws:iam::298104300097:role/github-actions-ci`
+- State backend: `sauron-cicd-tfstate` S3 bucket, symlinks pointing to `DioProjects` account
+
+### GitHub Actions CI Role — go-app repo added
+
+Updated `envs/github-actions-ci-role/DioProjects-us-east-1-sauron-github-actions-ci-role/terraform.tfvars`:
+
+- Added `diomidispt/go-app:*` to `allowed_repos`
+- The OIDC trust policy now allows both `diomidispt/terraform-aws` and `diomidispt/go-app` to assume the `github-actions-ci` role
+- Required so the `go-app` CI/CD pipeline can authenticate to AWS and push images to ECR
